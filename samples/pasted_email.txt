@@ -1,0 +1,7 @@
+From: Rohan Mehta <rohan@startup.example>
+Subject: Coffee next week?
+
+Hi! Loved your talk on AI agents at the meetup. Would you be up for a coffee next week to chat about how you set up your multi-agent pipeline? I am free Tuesday or Thursday afternoon near Indiranagar.
+
+Best,
+Rohan

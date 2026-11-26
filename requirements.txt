@@ -1,0 +1,8 @@
+# Python 3.10-3.13 (crewai doesn't support 3.14+ yet)
+crewai==1.15.22
+litellm
+mcp[cli]<2
+pypdf
+python-dotenv
+rich
+reportlab   # only for make_sample_inbox.py

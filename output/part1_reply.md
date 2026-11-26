@@ -1,0 +1,26 @@
+# Part 1 — reply to pasted email
+
+## Email
+
+```
+From: Rohan Mehta <rohan@startup.example>
+Subject: Coffee next week?
+
+Hi! Loved your talk on AI agents at the meetup. Would you be up for a coffee next week to chat about how you set up your multi-agent pipeline? I am free Tuesday or Thursday afternoon near Indiranagar.
+
+Best,
+Rohan
+```
+
+## Draft reply
+
+Subject: Re: Coffee next week?
+
+Hi Rohan,
+
+Thanks for the kind words about my talk! I’d be happy to meet for coffee and chat about the multi‑agent pipeline. I’m available on [pick Tue or Thu] afternoon—let me know what time works best for you near Indiranagar.
+
+Looking forward to it.
+
+Best regards,  
+[Your Name]

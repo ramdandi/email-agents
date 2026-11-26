@@ -1,0 +1,53 @@
+{
+  "day": "2026-11-26",
+  "emails": [
+    {
+      "id": 1,
+      "sender": "Priya Shah <priya.shah@northwind-legal.example>",
+      "subject": "Vendor contract - need your sign-off by Friday",
+      "category": "needs_action",
+      "reason": "Contract sign-off required with deadline",
+      "action": "Sign the contract"
+    },
+    {
+      "id": 2,
+      "sender": "The Weekly Byte <newsletter@weeklybyte.example>",
+      "subject": "This week: 7 AI agent frameworks compared",
+      "category": "no_action",
+      "reason": "Newsletter",
+      "action": ""
+    },
+    {
+      "id": 3,
+      "sender": "Marcus Lee <marcus.lee@contoso.example>",
+      "subject": "Can we move Thursday's sync?",
+      "category": "needs_action",
+      "reason": "Meeting reschedule request",
+      "action": "Confirm new meeting time"
+    },
+    {
+      "id": 4,
+      "sender": "ShopFast Orders <no-reply@shopfast.example>",
+      "subject": "Your order #48213 has shipped",
+      "category": "no_action",
+      "reason": "Automated shipment notification",
+      "action": ""
+    },
+    {
+      "id": 5,
+      "sender": "Anita Rao <anita.rao@fabrikam.example>",
+      "subject": "Invoice INV-2291 question",
+      "category": "needs_action",
+      "reason": "Invoice discrepancy question",
+      "action": "Review invoice and reply"
+    },
+    {
+      "id": 6,
+      "sender": "Team Updates <updates@company.example>",
+      "subject": "FYI: office closed on Monday for maintenance",
+      "category": "no_action",
+      "reason": "FYI office closure",
+      "action": ""
+    }
+  ]
+}

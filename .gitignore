@@ -1,0 +1,14 @@
+# Secrets — never commit
+.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# CrewAI run state and full run logs
+.crewai/
+output/logs/
+
+.DS_Store
