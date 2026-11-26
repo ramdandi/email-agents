@@ -1,6 +1,6 @@
 # Email Agents — Reader + Writer with CrewAI and MCP
 
-My Joinloop hackathon #1 project. Two AI agents work through an inbox:
+Two AI agents that work through your inbox:
 
 - A **Reader** sorts the day's emails into *needs action from me* and *doesn't need action from me*.
 - A **Writer** drafts replies, and the Reader hands it the emails that need action.
@@ -9,15 +9,13 @@ The inbox comes from a **PDF export** and is served to the agents by an **MCP se
 
 **Nothing is ever sent.** Every reply is a draft, and where a reply needs a decision only you can make, the Writer leaves a placeholder like `[pick Tue or Thu]`.
 
-## What's built from the course
+**Built with:** [CrewAI](https://github.com/crewAIInc/crewAI) for the agents, the [Model Context Protocol](https://modelcontextprotocol.io) (MCP) for inbox access, [Groq](https://groq.com) running `gpt-oss-20b` as the LLM, and [Streamlit](https://streamlit.io) for the web UI.
 
-| Idea | From | Where it's used here |
-|---|---|---|
-| Narrow agent roles in a pipeline | Session 3 — Research → Write → Review | `Reader → Writer`, `Process.sequential` |
-| Scoped handoff with `Task(context=[...])` | Session 3 — demo 2 | Part 4: the Writer sees only the Reader's triage |
-| Structured output | Session 3 | Triage and drafts are Pydantic models |
-| MCP server over stdio, tools = functions + docstrings | Session 4 — `mcp_demo_server.py` | `inbox_mcp_server.py` |
-| Agent that decides on its own which MCP tool to call | Session 4 — `mcp_agent_demo.py` | The agents call `get_first_email`, `list_emails` and `get_email` themselves |
+**Design choices:**
+- **Two narrow agents in a pipeline.** The Reader only sorts and the Writer only drafts, run in order with `Process.sequential`.
+- **A scoped handoff.** The Writer's task has `context=[triage]`, so it sees the Reader's output and nothing else.
+- **Structured output.** The triage and the drafts are Pydantic models, not free text.
+- **The agents choose their own tools.** They decide when to call the inbox tools `get_first_email`, `list_emails` and `get_email`. The code never hands them email text.
 
 ## How it fits together
 
@@ -38,9 +36,9 @@ The inbox comes from a **PDF export** and is served to the agents by an **MCP se
                           output/*.md  (drafts, never sent)
 ```
 
-## The 4 parts
+## What it does
 
-| Part | Script | What happens |
+| # | Script | What happens |
 |---|---|---|
 | 1 | `part1_reply_to_pasted.py` | Paste an email, and the **Writer** drafts a reply. No inbox involved. |
 | 2 | `part2_reply_first_email.py` | The **Writer** connects to the inbox through MCP, calls `get_first_email`, and replies to it. |

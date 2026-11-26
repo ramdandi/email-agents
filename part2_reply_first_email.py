@@ -4,8 +4,8 @@ Part 2 — Writer agent connects to the inbox and replies to the first email.
   python part2_reply_first_email.py                      # uses sample_inbox.pdf
   python part2_reply_first_email.py --pdf my_inbox.pdf   # your own inbox export
 
-"Connecting to email" = the Writer gets the MCP inbox server's tools
-(Session 4 pattern). It has to call get_first_email itself; we never hand it
+"Connecting to email" = the Writer gets the MCP inbox server's tools.
+It has to call get_first_email itself; we never hand it
 the email text. The reply is saved to output/part2_reply.md. Nothing is sent.
 """
 

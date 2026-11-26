@@ -1,8 +1,7 @@
 """
 MCP inbox server — serves emails from a PDF instead of a live mailbox.
 
-Same pattern as Session 4's mcp_demo_server.py: a FastMCP server whose tools
-the agents call over stdio. The agents never open the PDF themselves; they
+A FastMCP server whose tools the agents call over stdio. The agents never open the PDF themselves; they
 only see these tools, so swapping the PDF for real Gmail/IMAP later means
 changing this one file and nothing else.
 
@@ -22,7 +21,7 @@ sample_inbox.pdf next to this file.
 
 Try it without any LLM:  mcp dev inbox_mcp_server.py
 
-FOOTGUN (from Session 4): never print() here — stdout IS the MCP wire protocol.
+FOOTGUN: never print() here — stdout IS the MCP wire protocol.
 """
 
 import json

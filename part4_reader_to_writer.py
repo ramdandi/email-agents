@@ -6,10 +6,10 @@ which drafts a reply to every email that needs action.
   python part4_reader_to_writer.py --date 2026-11-26
   python part4_reader_to_writer.py --pdf my_inbox.pdf
 
-THE HANDOFF (Session 3's scoped context): the Writer's task has
+THE HANDOFF (scoped context): the Writer's task has
 context=[triage], so the Writer sees only the Reader's triage output, not the
 Reader's instructions. The Writer then fetches each needs-action email itself
-through the same MCP inbox tools (Session 4), so it replies to the real text,
+through the same MCP inbox tools, so it replies to the real text,
 not the Reader's summary of it.
 
 Drafts are printed and saved to output/part4_replies.md. Nothing is sent.

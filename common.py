@@ -1,10 +1,9 @@
 """
 Shared pieces for all 4 parts: the LLM, the two agents, and the MCP inbox server.
 
-Session 3 ideas reused here:
-  - narrow agent roles (Reader vs Writer), like Research -> Write -> Review
+Design:
+  - two narrow agent roles (Reader vs Writer) run as a pipeline
   - scoped handoffs via Task(context=[...]) — the Writer only sees the Reader's output
-Session 4 ideas reused here:
   - the inbox lives behind an MCP server (inbox_mcp_server.py) started over stdio;
     the agents only ever see its tools, never the PDF itself
 """
@@ -28,7 +27,7 @@ MY_NAME = os.getenv("MY_NAME", "[Your Name]")
 OUTPUT_DIR = os.path.join(HERE, "output")
 
 # --- Groq fixes, applied to every request right before it's sent -------------
-# 1. (Same patch as Session 3's demo2.) crewai tags messages with an internal
+# 1. crewai tags messages with an internal
 #    'cache_breakpoint' marker that Groq rejects: "property 'cache_breakpoint'
 #    is unsupported". Strip it.
 # 2. For MCP tools with no arguments (get_first_email, inbox_overview), crewai
@@ -123,7 +122,7 @@ def make_llm() -> LLM:
 
 
 def inbox_server(pdf_path: str | None = None) -> MCPServerStdio:
-    """How to launch the MCP inbox server (Session 4's stdio pattern)."""
+    """How to launch the MCP inbox server as a subprocess over stdio."""
     env = dict(os.environ)
     if pdf_path:
         env["INBOX_PDF"] = os.path.abspath(pdf_path)
