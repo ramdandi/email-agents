@@ -15,7 +15,8 @@ The inbox comes from a **PDF export** and is served to the agents by an **MCP se
 - **Two narrow agents in a pipeline.** The Reader only sorts and the Writer only drafts, run in order with `Process.sequential`.
 - **A scoped handoff.** The Writer's task has `context=[triage]`, so it sees the Reader's output and nothing else.
 - **Structured output.** The triage and the drafts are Pydantic models, not free text.
-- **The agents choose their own tools.** They decide when to call the inbox tools `get_first_email`, `list_emails` and `get_email`. The code never hands them email text.
+- **The agents choose their own tools.** For inbox tasks they decide when to call `get_first_email`, `list_emails` and `get_email`; the code never hands them inbox emails. (Part 1 is the exception by design: you paste the email in.)
+- **Checked output.** The triage must cover every email that day, and there must be one draft per needs-action email. Anything an agent skips is sent back to it, and the reply address is taken from the email itself, not from the model.
 
 ## How it fits together
 
@@ -86,7 +87,11 @@ streamlit run app.py
 
 It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF, choose the day, and run any part from its tab. Drafts appear in boxes with a copy button. The UI calls the same agents as the scripts.
 
-**Use your own inbox:** export some emails to a PDF, with each email starting with a `From:` line and followed by `Date:` and `Subject:` lines, then pass it with `--pdf my_inbox.pdf`. `python make_sample_inbox.py` shows the format; it generates the fake `sample_inbox.pdf` used here, and every person and company in it is made up.
+**Use your own inbox:** export some emails to a PDF, with each email starting with a `From:` line and followed by `Date:` (or `Sent:`) and `Subject:` lines, then pass it with `--pdf my_inbox.pdf`. `python make_sample_inbox.py` shows the format; it generates the fake `sample_inbox.pdf` used here, and every person and company in it is made up. A few rules for your own PDF:
+- **Quoted replies are fine.** A `From:` line right after "On … wrote:", "-----Original Message-----", a `____` line or "Begin forwarded message" is kept as part of the email it's quoted in.
+- **Keep each subject on one line.** PDF text extraction loses blank lines, so a subject wrapped onto a second line runs into the body.
+- **Every email needs a readable date** to be picked by day. Undated emails are flagged in the UI and by `inbox_overview`.
+- **US-style dates:** `03/04/2026` is read as 3 April. Set `INBOX_DATE_ORDER=MDY` in `.env` to read it as 4 March.
 
 **Which day counts as "today":** Parts 3 and 4 default to the newest day in the PDF, because an export is a snapshot. Use `--date today` for the real calendar day, or `--date 2026-11-26` for a specific one.
 
@@ -100,8 +105,8 @@ It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF,
 |---|---|
 | `inbox_mcp_server.py` | MCP server: parses the PDF into emails and serves them as 4 tools |
 | `common.py` | LLM setup, the Reader and Writer agents, MCP launch config, Groq compatibility settings |
-| `triage.py` | The Reader's task and its Pydantic output, shared by Parts 3 and 4 |
-| `part1_…` – `part4_…` | One script per assignment part; each has a `run()` function the UI calls |
+| `triage.py` | The Reader's task, its Pydantic output, and the check that every email was sorted |
+| `part1_…` – `part4_…` | One script per feature; each has a `run()` function the UI calls |
 | `app.py` | Streamlit web UI for all 4 parts |
 | `ui_screenshots.py` | Runs each part in the web UI (headless Chrome via Playwright) and saves `screenshots/ui_partN.png` |
 | `make_sample_inbox.py` | Generates the fake `sample_inbox.pdf` |

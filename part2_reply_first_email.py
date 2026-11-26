@@ -13,11 +13,15 @@ import argparse
 
 from crewai import Crew, Process, Task
 
-from common import inbox_server, make_llm, make_writer, require_key, save_output
+from common import exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_writer, require_key, save_output
 
 
 def run(pdf: str | None = None) -> str:
-    """Have the Writer fetch the first inbox email via MCP and reply. Returns the draft."""
+    """Have the Writer fetch the first inbox email via MCP and reply. Returns the draft.
+
+    Raises common.InboxError if the PDF is missing or has no emails.
+    """
+    load_inbox(pdf)  # fail clearly on a bad PDF before the agent starts
     writer = make_writer(make_llm(), mcps=[inbox_server(pdf)])
     task = Task(
         description=(
@@ -41,7 +45,7 @@ def main() -> None:
     parser.add_argument("--pdf", help="inbox PDF (default: sample_inbox.pdf)")
     args = parser.parse_args()
     require_key()
-    reply = run(args.pdf)
+    reply = exit_on_inbox_error(run, args.pdf)
     print("\n=== DRAFT REPLY TO FIRST EMAIL (not sent) ===\n")
     print(reply)
     print("\nSaved to output/part2_reply.md")

@@ -1,10 +1,11 @@
 # Python 3.10-3.13 (crewai doesn't support 3.14+ yet)
+# Pinned to the tested versions: common.py patches crewai internals for Groq.
 crewai==1.15.22
-litellm
-mcp[cli]<2
-pypdf
-python-dotenv
-rich
-reportlab   # only for make_sample_inbox.py
-streamlit
-playwright  # only for ui_screenshots.py (uses your installed Chrome)
+litellm==1.111.0
+mcp[cli]==1.28.1
+pypdf==7.1.1
+python-dotenv==1.2.4
+rich==14.3.4
+streamlit==1.67.0
+reportlab==5.1.2     # only for make_sample_inbox.py
+playwright==1.65.2   # only for ui_screenshots.py (uses your installed Chrome)

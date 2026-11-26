@@ -121,6 +121,30 @@ def make_llm() -> LLM:
     return LLM(model=MODEL, temperature=0.2)
 
 
+class InboxError(Exception):
+    """The inbox PDF is missing, unreadable or has no emails in it."""
+
+
+def load_inbox(pdf_path: str | None = None) -> list[dict]:
+    """Read the inbox PDF up front, so a bad path fails clearly before any agent runs.
+
+    Without this, a missing PDF only shows up inside the MCP server, and the
+    agent then "replies" with an apology instead of an error.
+    """
+    from inbox_mcp_server import PDF_PATH, _load_emails
+
+    path = os.path.abspath(pdf_path) if pdf_path else PDF_PATH
+    if not os.path.exists(path):
+        raise InboxError(f"Inbox PDF not found: {path}")
+    try:
+        emails = _load_emails(path)
+    except Exception as e:
+        raise InboxError(f"Couldn't read {path}: {e}") from e
+    if not emails:
+        raise InboxError(f"No emails found in {path}. Each email must start with a line like 'From: Name <a@b.com>'.")
+    return emails
+
+
 def inbox_server(pdf_path: str | None = None) -> MCPServerStdio:
     """How to launch the MCP inbox server as a subprocess over stdio."""
     env = dict(os.environ)
@@ -163,6 +187,14 @@ def make_reader(llm: LLM, mcps: list) -> Agent:
         mcps=mcps,
         verbose=True,
     )
+
+
+def exit_on_inbox_error(fn, *args):
+    """For the command-line scripts: turn an InboxError into a clean one-line exit."""
+    try:
+        return fn(*args)
+    except InboxError as e:
+        sys.exit(f"Error: {e}")
 
 
 def save_output(name: str, text: str) -> str:

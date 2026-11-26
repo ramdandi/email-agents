@@ -19,6 +19,17 @@ can span pages, and one page can hold several emails.
 Which PDF: the INBOX_PDF env var (set by common.inbox_server), else
 sample_inbox.pdf next to this file.
 
+Quoted replies stay inside their email: a "From:" line right after a reply
+marker ("On ... wrote:", "-----Original Message-----", a "____" line, or
+"Begin forwarded message") is treated as quoted text, not a new email.
+
+Dates like 03/04/2026 are read day-first (3 April). Set INBOX_DATE_ORDER=MDY
+for US-style exports (4 March). Emails with no readable date are listed as
+"undated" and can't be picked by day.
+
+Limitation: keep each Subject on one line. PDF text extraction drops blank
+lines, so a subject wrapped onto a second line can't be told apart from the body.
+
 Try it without any LLM:  mcp dev inbox_mcp_server.py
 
 FOOTGUN: never print() here — stdout IS the MCP wire protocol.
@@ -38,12 +49,19 @@ PDF_PATH = os.getenv("INBOX_PDF") or os.path.join(HERE, "sample_inbox.pdf")
 mcp = FastMCP("Inbox (PDF)")
 
 _HEADER = re.compile(r"^(From|To|Cc|Date|Sent|Subject)\s*:\s*(.*)$", re.IGNORECASE)
+# Lines that introduce a quoted/forwarded message inside an email's body.
+_QUOTE_MARKER = re.compile(
+    r"^(On .{3,200} wrote:|-{2,}\s*Original Message\s*-{2,}|_{5,}|-{2,}\s*Forwarded message\s*-{2,}|Begin forwarded message:?)$",
+    re.IGNORECASE,
+)
 _DATE_FORMATS = [
     "%Y-%m-%d %H:%M", "%Y-%m-%d", "%d %b %Y %H:%M", "%d %b %Y", "%d %B %Y",
     "%b %d, %Y %I:%M %p", "%b %d, %Y", "%B %d, %Y %I:%M %p", "%B %d, %Y",
     "%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M", "%A, %B %d, %Y %I:%M %p",
-    "%d/%m/%Y %H:%M", "%d/%m/%Y", "%m/%d/%Y",
 ]
+_DMY = ["%d/%m/%Y %H:%M", "%d/%m/%Y", "%d/%m/%Y %I:%M %p"]
+_MDY = ["%m/%d/%Y %H:%M", "%m/%d/%Y", "%m/%d/%Y %I:%M %p"]
+_NUMERIC_FORMATS = _MDY if os.getenv("INBOX_DATE_ORDER", "DMY").upper() == "MDY" else _DMY
 
 
 def _parse_date(raw: str) -> str | None:
@@ -51,7 +69,7 @@ def _parse_date(raw: str) -> str | None:
     # Drop "(IST)", "+0530" and zone names like "GMT", but keep AM/PM.
     cleaned = re.sub(r"\s*\(.*?\)|\s+[+-]\d{4}$|\s+(?!AM$|PM$)[A-Z]{2,4}$", "", raw.strip())
     cleaned = re.sub(r"\s+[+-]\d{4}$", "", cleaned)
-    for fmt in _DATE_FORMATS:
+    for fmt in _DATE_FORMATS + _NUMERIC_FORMATS:
         try:
             return datetime.strptime(cleaned, fmt).date().isoformat()
         except ValueError:
@@ -68,8 +86,16 @@ def _load_emails(path: str | None = None) -> list[dict]:
     text = "\n".join(page.extract_text() or "" for page in PdfReader(path).pages)
     lines = [ln.rstrip() for ln in text.splitlines()]
 
-    # Each email starts at a "From:" line.
-    starts = [i for i, ln in enumerate(lines) if re.match(r"^\s*From\s*:", ln, re.IGNORECASE)]
+    # Each email starts at a "From:" line, unless that line is part of a quoted
+    # reply: it comes right after a reply marker, or the quoted text is ">"-prefixed.
+    starts = []
+    for i, ln in enumerate(lines):
+        if not re.match(r"^\s*From\s*:", ln, re.IGNORECASE):
+            continue
+        before = [p.strip() for p in lines[max(0, i - 3):i] if p.strip()]
+        if before and _QUOTE_MARKER.match(before[-1]):
+            continue
+        starts.append(i)
     emails = []
     for n, start in enumerate(starts):
         block = lines[start: starts[n + 1] if n + 1 < len(starts) else len(lines)]
@@ -109,12 +135,21 @@ def _resolve_day(date: str, emails: list[dict]) -> str:
     return date
 
 
+def emails_for_day(emails: list[dict], date: str) -> tuple[str, list[dict]]:
+    """The emails list_emails returns for `date` ('latest', 'today', 'all' or YYYY-MM-DD)."""
+    if date.lower() == "all":
+        return "all", emails
+    day = _resolve_day(date, emails)
+    return day, [e for e in emails if e["day"] == day]
+
+
 @mcp.tool()
 def inbox_overview() -> str:
     """Count the emails in the inbox and list which days they are from. Call this first."""
     emails = _load_emails()
     days = sorted({e["day"] for e in emails if e["day"]})
-    return json.dumps({"total_emails": len(emails), "days": days, "latest_day": days[-1] if days else None})
+    undated = [e["id"] for e in emails if not e["day"]]
+    return json.dumps({"total_emails": len(emails), "days": days, "latest_day": days[-1] if days else None, "undated_ids": undated})
 
 
 @mcp.tool()
@@ -123,12 +158,7 @@ def list_emails(date: str = "latest") -> str:
 
     date: 'YYYY-MM-DD', 'latest' (the newest day in the inbox, the default), 'today', or 'all'.
     """
-    emails = _load_emails()
-    if date.lower() == "all":
-        picked, day = emails, "all"
-    else:
-        day = _resolve_day(date, emails)
-        picked = [e for e in emails if e["day"] == day]
+    day, picked = emails_for_day(_load_emails(), date)
     return json.dumps({"day": day, "count": len(picked), "emails": [_summary(e) for e in picked]})
 
 

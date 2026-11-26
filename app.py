@@ -20,11 +20,12 @@ import part2_reply_first_email as part2  # noqa: E402
 import part3_categorize_today as part3  # noqa: E402
 import part4_reader_to_writer as part4  # noqa: E402
 from common import HERE, MODEL, MY_NAME  # noqa: E402
-from inbox_mcp_server import _load_emails  # noqa: E402
+from inbox_mcp_server import _load_emails, emails_for_day  # noqa: E402
 
 SAMPLE_PDF = os.path.join(HERE, "sample_inbox.pdf")
 UPLOAD_DIR = os.path.join(HERE, "uploads")
-SAMPLE_EMAIL = open(os.path.join(HERE, "samples", "pasted_email.txt")).read()
+with open(os.path.join(HERE, "samples", "pasted_email.txt")) as _f:
+    SAMPLE_EMAIL = _f.read()
 
 st.set_page_config(page_title="Email Agents", page_icon="✉️", layout="wide")
 
@@ -60,10 +61,8 @@ def show_triage(triage) -> None:
 
 
 def show_day_emails(emails: list[dict], day: str, days: list[str]) -> None:
-    """Show which emails Parts 3/4 will work on, before running them."""
-    from datetime import date as _date
-    target = {"latest": days[0] if days else None, "today": _date.today().isoformat()}.get(day, day)
-    picked = [e for e in emails if e["day"] == target]
+    """Show which emails Parts 3/4 will work on, before running them (same rule the MCP tool uses)."""
+    target, picked = emails_for_day(emails, day)
     with st.expander(f"📬 {len(picked)} email(s) on {target} will be sorted", expanded=False):
         if not picked:
             st.warning("No emails on that day. Pick another day in the sidebar.")
@@ -113,6 +112,12 @@ with st.sidebar:
     days = sorted({e["day"] for e in emails if e["day"]}, reverse=True)
     per_day = {d: sum(e["day"] == d for e in emails) for d in days}
     st.success(f"{len(emails)} emails  \n" + "  \n".join(f"{d}: {n}" for d, n in per_day.items()))
+    undated = [e for e in emails if not e["day"]]
+    if undated:
+        st.warning(
+            f"{len(undated)} email(s) have no readable date ({', '.join('#' + str(e['id']) for e in undated)}), "
+            "so Parts 3 & 4 can't pick them by day."
+        )
     day = st.selectbox(
         "Day for Parts 3 & 4", ["latest"] + days + ["today"],
         format_func=lambda d: {"latest": f"Newest in PDF ({days[0] if days else '—'})", "today": "Real today"}.get(d, d),
@@ -164,12 +169,14 @@ with t3:
     show_day_emails(emails, day, days)
     if st.button("🔎 Sort emails", type="primary", key="b3"):
         state["p3"] = run_agents("Reader", part3.run, pdf_path, day)
-    if state.get("p3"):
-        triage, raw = state["p3"]
-        if triage:
-            show_triage(triage)
+    out3 = state.get("p3")
+    if out3:
+        if out3.re_requested:
+            st.info(f"The Reader skipped {', '.join(f'#{i}' for i in out3.re_requested)} at first, so it was asked again.")
+        if out3.triage:
+            show_triage(out3.triage)
         else:
-            st.code(raw, language=None, wrap_lines=True)
+            st.code(out3.raw, language=None, wrap_lines=True)
 
 with t4:
     st.markdown(
@@ -182,6 +189,8 @@ with t4:
     out = state.get("p4")
     if out:
         st.markdown("### Step 1 · Reader's triage")
+        if out.triage_re_requested:
+            st.info(f"The Reader skipped {', '.join(f'#{i}' for i in out.triage_re_requested)} at first, so it was asked again.")
         if out.triage:
             show_triage(out.triage)
         else:

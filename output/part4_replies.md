@@ -7,19 +7,19 @@ Emails on 2026-11-26: 6
 
 1) NEEDS ACTION FROM ME (3)
    #1 Vendor contract - need your sign-off by Friday — Priya Shah <priya.shah@northwind-legal.example>
-      -> Sign the contract and reply
+      -> Sign the contract.
    #3 Can we move Thursday's sync? — Marcus Lee <marcus.lee@contoso.example>
-      -> Confirm new time
+      -> Confirm new meeting time.
    #5 Invoice INV-2291 question — Anita Rao <anita.rao@fabrikam.example>
-      -> Reply with confirmation
+      -> Review invoice and reply.
 
 2) DOES NOT NEED ACTION FROM ME (3)
    #2 This week: 7 AI agent frameworks compared — The Weekly Byte <newsletter@weeklybyte.example>
-      (Newsletter)
+      (Newsletter content.)
    #4 Your order #48213 has shipped — ShopFast Orders <no-reply@shopfast.example>
-      (Automated shipping notification)
+      (Automated shipment notification.)
    #6 FYI: office closed on Monday for maintenance — Team Updates <updates@company.example>
-      (FYI update)
+      (FYI update.)
 ```
 
 ## Writer's draft replies
@@ -31,12 +31,12 @@ Subject: Re: Vendor contract - need your sign-off by Friday
 
 Hi Priya,
 
-Thanks for the update. I have a couple of questions regarding the points you mentioned:
+Thank you for the updated contract. I have a couple of points:
 
-1. Regarding the payment term, [approve 60-day term? yes/no].
-2. Regarding the liability cap, [approve liability cap? yes/no].
+1. The 60‑day payment term is acceptable.
+2. The liability cap of 12 months of fees is also acceptable.
 
-Once I have your confirmation, I can sign off and we can proceed.
+I will sign off and send the signed copy back to you by end of day.
 
 Best regards,
 [Your Name]
@@ -47,9 +47,9 @@ Subject: Re: Can we move Thursday's sync?
 
 Hey Marcus,
 
-Thanks for letting me know. I can make the sync work on Friday morning. [pick 10am/11am/12pm] works for me. Please send the updated invite.
+Friday morning works for me. Let's schedule the sync for 10:00 am. I'll update the invite.
 
-Best regards,
+Cheers,
 [Your Name]
 
 --- Reply to email #5 ---
@@ -58,7 +58,7 @@ Subject: Re: Invoice INV-2291 question
 
 Hello Anita,
 
-Thanks for reaching out. I need to confirm whether the extra Rs 25,000 is for an additional training day. [confirm training day? yes/no]. If it is, please send a revised invoice reflecting the correct amount. Our payment run is on Monday, so a prompt update would be appreciated.
+Thank you for bringing this to my attention. I will review the invoice and the PO details and get back to you with confirmation or a revised invoice by the end of today.
 
 Best regards,
 [Your Name]

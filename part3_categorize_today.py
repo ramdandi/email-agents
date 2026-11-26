@@ -12,26 +12,43 @@ Why "newest day" by default: an exported PDF is a snapshot, so the real
 calendar today often has no emails in it. Use --date today if yours does.
 
 The Reader reads only through the MCP inbox tools and returns structured
-output (a Pydantic model), saved to output/part3_triage.md and .json.
+output (a Pydantic model). The result is checked against the day's actual
+emails, and any the Reader skipped are sent back to it. Saved to
+output/part3_triage.md and .json.
 """
 
 import argparse
+from dataclasses import dataclass, field
 
 from crewai import Crew, Process
 
-from common import inbox_server, make_llm, make_reader, require_key, save_output
-from triage import InboxTriage, print_triage, triage_task
+from common import exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_reader, require_key, save_output
+from inbox_mcp_server import emails_for_day
+from triage import InboxTriage, complete_triage, format_triage, triage_task
 
 
-def run(pdf: str | None = None, date: str = "latest") -> tuple[InboxTriage | None, str]:
-    """Triage one day's emails. Returns (structured triage or None, raw model output)."""
+@dataclass
+class Part3Result:
+    triage: InboxTriage | None  # None if the model didn't return valid structured output
+    raw: str
+    day: str
+    re_requested: list[int] = field(default_factory=list)  # ids the Reader skipped and was asked again for
+
+
+def run(pdf: str | None = None, date: str = "latest") -> Part3Result:
+    """Triage one day's emails. Raises common.InboxError if the PDF is missing or empty."""
+    day, expected = emails_for_day(load_inbox(pdf), date)
     reader = make_reader(make_llm(), mcps=[inbox_server(pdf)])
-    task = triage_task(reader, date)
-    result = Crew(agents=[reader], tasks=[task], process=Process.sequential, verbose=True).kickoff()
-    triage = result.pydantic
-    if triage is not None:
-        save_output("part3_triage.json", triage.model_dump_json(indent=2))
-    return triage, result.raw
+    result = Crew(agents=[reader], tasks=[triage_task(reader, date)], process=Process.sequential, verbose=True).kickoff()
+
+    out = Part3Result(triage=result.pydantic, raw=result.raw, day=day)
+    if out.triage is not None:
+        out.re_requested = complete_triage(reader, out.triage, expected, day)
+        save_output("part3_triage.json", out.triage.model_dump_json(indent=2))
+        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n```\n{format_triage(out.triage)}\n```\n")
+    else:
+        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n{out.raw}\n")
+    return out
 
 
 def main() -> None:
@@ -41,15 +58,12 @@ def main() -> None:
     args = parser.parse_args()
     require_key()
 
-    triage, raw = run(args.pdf, args.date)
+    out = exit_on_inbox_error(run, args.pdf, args.date)
     print("\n=== INBOX TRIAGE ===\n")
-    if triage is None:  # the model didn't return valid structured output
-        print(raw)
-        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n{raw}\n")
-        return
-    text = print_triage(triage)
-    save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n```\n{text}\n```\n")
-    print("\nSaved to output/part3_triage.md (and part3_triage.json)")
+    if out.re_requested:
+        print(f"[check] Reader skipped {', '.join(f'#{i}' for i in out.re_requested)} — asked it to sort those too.\n")
+    print(format_triage(out.triage) if out.triage else out.raw)
+    print("\nSaved to output/part3_triage.md" + (" and part3_triage.json" if out.triage else ""))
 
 
 if __name__ == "__main__":

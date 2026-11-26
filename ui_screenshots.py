@@ -10,11 +10,13 @@ download): clicks each tab's button, waits for the agents to finish, and saves
 screenshots/ui_partN.png. Every screenshot is a real run against Groq.
 """
 
+import os
 import sys
 import time
 
 from playwright.sync_api import sync_playwright
 
+SHOTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "screenshots")
 URL = "http://localhost:8501"
 WIDTH = 1440
 PARTS = {
@@ -56,7 +58,8 @@ def main() -> None:
                 print(f"Part {n}: FAILED — see the UI; screenshot saved anyway")
             page.wait_for_timeout(1500)
             fit_to_content(page)
-            out = f"screenshots/ui_part{n}.png"
+            os.makedirs(SHOTS, exist_ok=True)
+            out = os.path.join(SHOTS, f"ui_part{n}.png")
             page.screenshot(path=out, full_page=True)
             print(f"Part {n}: saved {out}")
             if n != wanted[-1]:

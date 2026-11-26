@@ -7,9 +7,8 @@ venv/
 __pycache__/
 *.pyc
 
-# CrewAI run state and full run logs
+# CrewAI run state
 .crewai/
-output/logs/
 
 .DS_Store
 uploads/
