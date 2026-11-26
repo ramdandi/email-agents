@@ -110,24 +110,14 @@ It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF,
 
 **Try the MCP server with no LLM:** run `mcp dev inbox_mcp_server.py` and call the tools in MCP Inspector.
 
-**Retake the screenshots:** `python capture.py part1` (or `part2`, `part3`, `part4`).
-
-## Problems I hit (and fixed)
-
-CrewAI 1.15 with MCP on Groq's free tier needed 4 workarounds. All of them are in [`common.py`](common.py):
-
-1. **`cache_breakpoint` is unsupported:** CrewAI adds an internal field to every message, and Groq rejects it. Strip it before each request. This is the same fix as Session 3's demo 2.
-2. **`'required' present but 'properties' is missing`:** for MCP tools with no arguments, such as `get_first_email`, CrewAI's schema gets rejected by Groq. Drop the empty `required` list.
-3. **Tool names cut off, and the model calling a tool named "python":** CrewAI names stdio MCP tools `<command>_<args>_<tool>` and cuts the result to 64 characters. With full paths, the real tool name was lost. Shortened to `python_m_…`, it made gpt-oss call its own built-in `python` tool. The fix names each server after its script, so tools come out as `inbox_mcp_server_get_email`.
-4. **Rate limits:** the free tier allows about 8,000 tokens per minute, and Part 4 goes over that. Groq's error says how long to wait, so the code waits that long and retries.
-5. **Unreliable model output:** gpt-oss on Groq sometimes returns output Groq can't parse (`output_parse_failed`), so those requests are retried. In Part 4, the Writer sometimes stops after the first draft, so the script checks its drafts against the Reader's needs-action list and asks again for any it missed. The output shows a `[check]` line when that happens.
+**Retake the screenshots:** with the UI running, `python ui_screenshots.py`; for the terminal versions, `python capture.py part1` (or `part2`, `part3`, `part4`).
 
 ## Files
 
 | File | What it is |
 |---|---|
 | `inbox_mcp_server.py` | MCP server: parses the PDF into emails and serves them as 4 tools |
-| `common.py` | LLM setup, the Reader and Writer agents, MCP launch config, Groq workarounds |
+| `common.py` | LLM setup, the Reader and Writer agents, MCP launch config, Groq compatibility settings |
 | `triage.py` | The Reader's task and its Pydantic output, shared by Parts 3 and 4 |
 | `part1_…` – `part4_…` | One script per assignment part; each has a `run()` function the UI calls |
 | `app.py` | Streamlit web UI for all 4 parts |
