@@ -80,6 +80,14 @@ python part3_categorize_today.py
 python part4_reader_to_writer.py
 ```
 
+**Or use the web UI:**
+
+```bash
+streamlit run app.py
+```
+
+It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF, choose the day, and run any part from its tab. Drafts appear in boxes with a copy button. The UI calls the same agents as the scripts.
+
 **Use your own inbox:** export some emails to a PDF, with each email starting with a `From:` line and followed by `Date:` and `Subject:` lines, then pass it with `--pdf my_inbox.pdf`. `python make_sample_inbox.py` shows the format; it generates the fake `sample_inbox.pdf` used here, and every person and company in it is made up.
 
 **Which day counts as "today":** Parts 3 and 4 default to the newest day in the PDF, because an export is a snapshot. Use `--date today` for the real calendar day, or `--date 2026-11-26` for a specific one.
@@ -105,7 +113,8 @@ CrewAI 1.15 with MCP on Groq's free tier needed 4 workarounds. All of them are i
 | `inbox_mcp_server.py` | MCP server: parses the PDF into emails and serves them as 4 tools |
 | `common.py` | LLM setup, the Reader and Writer agents, MCP launch config, Groq workarounds |
 | `triage.py` | The Reader's task and its Pydantic output, shared by Parts 3 and 4 |
-| `part1_…` – `part4_…` | One script per assignment part |
+| `part1_…` – `part4_…` | One script per assignment part; each has a `run()` function the UI calls |
+| `app.py` | Streamlit web UI for all 4 parts |
 | `capture.py` | Runs a part and saves a screenshot to `screenshots/` |
 | `make_sample_inbox.py` | Generates the fake `sample_inbox.pdf` |
 | `output/` | Drafts and triage from the latest runs |

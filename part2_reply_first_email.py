@@ -16,13 +16,9 @@ from crewai import Crew, Process, Task
 from common import inbox_server, make_llm, make_writer, require_key, save_output
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--pdf", help="inbox PDF (default: sample_inbox.pdf)")
-    args = parser.parse_args()
-    require_key()
-
-    writer = make_writer(make_llm(), mcps=[inbox_server(args.pdf)])
+def run(pdf: str | None = None) -> str:
+    """Have the Writer fetch the first inbox email via MCP and reply. Returns the draft."""
+    writer = make_writer(make_llm(), mcps=[inbox_server(pdf)])
     task = Task(
         description=(
             "Use your inbox tool to fetch the FIRST email in the inbox (get_first_email). "
@@ -35,12 +31,20 @@ def main() -> None:
         ),
         agent=writer,
     )
-    result = Crew(agents=[writer], tasks=[task], process=Process.sequential, verbose=True).kickoff()
+    reply = Crew(agents=[writer], tasks=[task], process=Process.sequential, verbose=True).kickoff().raw
+    save_output("part2_reply.md", f"# Part 2 — reply to the first inbox email\n\n{reply}\n")
+    return reply
 
-    path = save_output("part2_reply.md", f"# Part 2 — reply to the first inbox email\n\n{result.raw}\n")
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--pdf", help="inbox PDF (default: sample_inbox.pdf)")
+    args = parser.parse_args()
+    require_key()
+    reply = run(args.pdf)
     print("\n=== DRAFT REPLY TO FIRST EMAIL (not sent) ===\n")
-    print(result.raw)
-    print(f"\nSaved to {path}")
+    print(reply)
+    print("\nSaved to output/part2_reply.md")
 
 
 if __name__ == "__main__":

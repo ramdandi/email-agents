@@ -18,9 +18,7 @@ Subject: Re: Coffee next week?
 
 Hi Rohan,
 
-Thanks for the kind words about my talk! I’d be happy to meet for coffee and chat about the multi‑agent pipeline. I’m available on [pick Tue or Thu] afternoon—let me know what time works best for you near Indiranagar.
-
-Looking forward to it.
+Thanks for the kind words! I'd be happy to meet for coffee next week. I'm available on [pick Tue or Thu, time] near Indiranagar. Let me know which works best for you.
 
 Best regards,  
 [Your Name]

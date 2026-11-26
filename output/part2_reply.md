@@ -6,12 +6,12 @@ Subject: Re: Vendor contract - need your sign-off by Friday
 
 Hi Priya,
 
-Thanks for the update. Regarding the open points:
+Thanks for the update. Please let me know:
 
-1. 60‑day payment term – [approve 60-day terms? yes/no]  
-2. Liability cap at 12 months of fees – [approve liability cap? yes/no]
+- [confirm 60-day payment term? yes/no]
+- [confirm liability cap at 12 months of fees? yes/no]
 
-I will sign off by Friday 28 Nov as requested.
+Once I have your confirmation, I’ll sign off so we can countersign before month end.
 
 Best regards,  
 [Your Name]

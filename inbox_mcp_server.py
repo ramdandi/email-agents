@@ -61,10 +61,12 @@ def _parse_date(raw: str) -> str | None:
     return m.group(0) if m else None
 
 
-def _load_emails() -> list[dict]:
-    if not os.path.exists(PDF_PATH):
-        raise FileNotFoundError(f"Inbox PDF not found: {PDF_PATH}")
-    text = "\n".join(page.extract_text() or "" for page in PdfReader(PDF_PATH).pages)
+def _load_emails(path: str | None = None) -> list[dict]:
+    """Parse the inbox PDF into emails. `path` lets the UI preview any PDF; the tools use PDF_PATH."""
+    path = path or PDF_PATH
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Inbox PDF not found: {path}")
+    text = "\n".join(page.extract_text() or "" for page in PdfReader(path).pages)
     lines = [ln.rstrip() for ln in text.splitlines()]
 
     # Each email starts at a "From:" line.

@@ -20,7 +20,18 @@ import argparse
 from crewai import Crew, Process
 
 from common import inbox_server, make_llm, make_reader, require_key, save_output
-from triage import print_triage, triage_task
+from triage import InboxTriage, print_triage, triage_task
+
+
+def run(pdf: str | None = None, date: str = "latest") -> tuple[InboxTriage | None, str]:
+    """Triage one day's emails. Returns (structured triage or None, raw model output)."""
+    reader = make_reader(make_llm(), mcps=[inbox_server(pdf)])
+    task = triage_task(reader, date)
+    result = Crew(agents=[reader], tasks=[task], process=Process.sequential, verbose=True).kickoff()
+    triage = result.pydantic
+    if triage is not None:
+        save_output("part3_triage.json", triage.model_dump_json(indent=2))
+    return triage, result.raw
 
 
 def main() -> None:
@@ -30,20 +41,15 @@ def main() -> None:
     args = parser.parse_args()
     require_key()
 
-    reader = make_reader(make_llm(), mcps=[inbox_server(args.pdf)])
-    task = triage_task(reader, args.date)
-    result = Crew(agents=[reader], tasks=[task], process=Process.sequential, verbose=True).kickoff()
-
-    triage = result.pydantic
+    triage, raw = run(args.pdf, args.date)
     print("\n=== INBOX TRIAGE ===\n")
     if triage is None:  # the model didn't return valid structured output
-        print(result.raw)
-        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n{result.raw}\n")
+        print(raw)
+        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n{raw}\n")
         return
     text = print_triage(triage)
-    save_output("part3_triage.json", triage.model_dump_json(indent=2))
-    path = save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n```\n{text}\n```\n")
-    print(f"\nSaved to {path} (and part3_triage.json)")
+    save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n```\n{text}\n```\n")
+    print("\nSaved to output/part3_triage.md (and part3_triage.json)")
 
 
 if __name__ == "__main__":

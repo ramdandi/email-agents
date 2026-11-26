@@ -16,6 +16,23 @@ from crewai import Crew, Process, Task
 from common import make_llm, make_writer, require_key, save_output
 
 
+def run(email: str) -> str:
+    """Draft a reply to one email's text. Returns the draft (subject line + body)."""
+    writer = make_writer(make_llm())
+    task = Task(
+        description=(
+            "Write a reply to this email. Answer every question and request in it. "
+            "Use placeholders like [confirm date] for anything you'd have to guess.\n\n"
+            f"--- EMAIL ---\n{email}\n--- END EMAIL ---"
+        ),
+        expected_output="Only the reply: a 'Subject: Re: ...' line, a blank line, then the reply body with a sign-off.",
+        agent=writer,
+    )
+    reply = Crew(agents=[writer], tasks=[task], process=Process.sequential, verbose=True).kickoff().raw
+    save_output("part1_reply.md", f"# Part 1 — reply to pasted email\n\n## Email\n\n```\n{email}\n```\n\n## Draft reply\n\n{reply}\n")
+    return reply
+
+
 def read_email() -> str:
     if len(sys.argv) > 1:
         with open(sys.argv[1]) as f:
@@ -30,23 +47,10 @@ def main() -> None:
     email = read_email().strip()
     if not email:
         sys.exit("No email text given.")
-
-    writer = make_writer(make_llm())
-    task = Task(
-        description=(
-            "Write a reply to this email. Answer every question and request in it. "
-            "Use placeholders like [confirm date] for anything you'd have to guess.\n\n"
-            f"--- EMAIL ---\n{email}\n--- END EMAIL ---"
-        ),
-        expected_output="Only the reply: a 'Subject: Re: ...' line, a blank line, then the reply body with a sign-off.",
-        agent=writer,
-    )
-    result = Crew(agents=[writer], tasks=[task], process=Process.sequential, verbose=True).kickoff()
-
-    path = save_output("part1_reply.md", f"# Part 1 — reply to pasted email\n\n## Email\n\n```\n{email}\n```\n\n## Draft reply\n\n{result.raw}\n")
+    reply = run(email)
     print("\n=== DRAFT REPLY (not sent) ===\n")
-    print(result.raw)
-    print(f"\nSaved to {path}")
+    print(reply)
+    print("\nSaved to output/part1_reply.md")
 
 
 if __name__ == "__main__":

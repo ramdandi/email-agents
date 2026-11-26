@@ -6,3 +6,4 @@ pypdf
 python-dotenv
 rich
 reportlab   # only for make_sample_inbox.py
+streamlit
