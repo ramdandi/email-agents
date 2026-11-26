@@ -35,8 +35,11 @@ def run(email: str) -> str:
 
 def read_email() -> str:
     if len(sys.argv) > 1:
-        with open(sys.argv[1]) as f:
-            return f.read()
+        try:
+            with open(sys.argv[1]) as f:
+                return f.read()
+        except OSError as e:
+            sys.exit(f"Error: couldn't read {sys.argv[1]}: {e.strerror}")
     if sys.stdin.isatty():
         print("Paste the email (headers optional), then press Ctrl-D on a new line:\n")
     return sys.stdin.read()

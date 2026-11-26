@@ -145,6 +145,14 @@ def load_inbox(pdf_path: str | None = None) -> list[dict]:
     return emails
 
 
+def check_date(date: str) -> None:
+    """Reject a --date the inbox tools wouldn't understand, before any agent runs."""
+    from inbox_mcp_server import valid_date_choice
+
+    if not valid_date_choice(date):
+        raise InboxError(f"Bad date {date!r}. Use YYYY-MM-DD (e.g. 2026-11-26), 'latest' or 'today'.")
+
+
 def inbox_server(pdf_path: str | None = None) -> MCPServerStdio:
     """How to launch the MCP inbox server as a subprocess over stdio."""
     env = dict(os.environ)

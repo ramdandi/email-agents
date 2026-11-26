@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from crewai import Crew, Process, Task
 from pydantic import BaseModel
 
-from common import exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_reader, make_writer, require_key, save_output
+from common import check_date, exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_reader, make_writer, require_key, save_output
 from inbox_mcp_server import emails_for_day
 from triage import InboxTriage, complete_triage, format_triage, triage_task
 
@@ -52,10 +52,15 @@ class Part4Result:
 
 
 def run(pdf: str | None = None, date: str = "latest") -> Part4Result:
-    """Reader triages, Writer drafts. Raises common.InboxError if the PDF is missing or empty."""
+    """Reader triages, Writer drafts. Raises common.InboxError for a missing/empty PDF or a bad date."""
+    check_date(date)
     inbox = load_inbox(pdf)  # fail clearly on a bad PDF before any agent starts
     by_id = {e["id"]: e for e in inbox}
     day, expected = emails_for_day(inbox, date)
+    if not expected:  # nothing to sort or reply to: don't spend LLM calls on it
+        empty = InboxTriage(day=day, emails=[])
+        save_output("part4_replies.md", f"# Part 4 — Reader -> Writer\n\n```\n{format_triage(empty)}\n```\n")
+        return Part4Result(triage=empty, triage_raw="", drafts=[], drafts_raw="", day=day)
 
     llm = make_llm()
     reader = make_reader(llm, mcps=[inbox_server(pdf)])
@@ -96,7 +101,7 @@ def run(pdf: str | None = None, date: str = "latest") -> Part4Result:
     # Check 2: one draft per needs-action email, and nothing else.
     if out.triage and out.drafts is not None:
         needed = {e.id: e for e in out.triage.emails if e.category == "needs_action"}
-        out.drafts = [d for d in out.drafts if d.email_id in needed]
+        out.drafts = list({d.email_id: d for d in reversed(out.drafts) if d.email_id in needed}.values())  # one per email (first wins)
         missing = [i for i in needed if i not in {d.email_id for d in out.drafts}]
         if missing:
             out.re_requested = missing

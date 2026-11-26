@@ -6,8 +6,8 @@
       "sender": "Priya Shah <priya.shah@northwind-legal.example>",
       "subject": "Vendor contract - need your sign-off by Friday",
       "category": "needs_action",
-      "reason": "Direct request for sign-off with deadline",
-      "action": "Sign and reply"
+      "reason": "Direct request for sign-off with a deadline",
+      "action": "Sign the contract and reply"
     },
     {
       "id": 2,
@@ -22,15 +22,15 @@
       "sender": "Marcus Lee <marcus.lee@contoso.example>",
       "subject": "Can we move Thursday's sync?",
       "category": "needs_action",
-      "reason": "Meeting reschedule request",
-      "action": "Respond with new time"
+      "reason": "Request to reschedule a meeting",
+      "action": "Confirm new time"
     },
     {
       "id": 4,
       "sender": "ShopFast Orders <no-reply@shopfast.example>",
       "subject": "Your order #48213 has shipped",
       "category": "no_action",
-      "reason": "Automated shipment notification",
+      "reason": "Automated shipping notification",
       "action": ""
     },
     {
@@ -38,8 +38,8 @@
       "sender": "Anita Rao <anita.rao@fabrikam.example>",
       "subject": "Invoice INV-2291 question",
       "category": "needs_action",
-      "reason": "Invoice discrepancy question",
-      "action": "Confirm invoice details"
+      "reason": "Direct question about invoice discrepancy",
+      "action": "Confirm or clarify the invoice amount"
     },
     {
       "id": 6,

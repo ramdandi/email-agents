@@ -39,6 +39,9 @@ def show_draft(text: str, key: str) -> None:
 def show_triage(triage) -> None:
     need = [e for e in triage.emails if e.category == "needs_action"]
     rest = [e for e in triage.emails if e.category == "no_action"]
+    if not triage.emails:
+        st.info(f"No emails on {triage.day}, so there was nothing to sort. Pick another day in the sidebar.")
+        return
     st.caption(f"{len(triage.emails)} emails on {triage.day}")
     left, right = st.columns(2)
     with left:
@@ -60,7 +63,7 @@ def show_triage(triage) -> None:
             st.info("Everything needs action.")
 
 
-def show_day_emails(emails: list[dict], day: str, days: list[str]) -> None:
+def show_day_emails(emails: list[dict], day: str) -> None:
     """Show which emails Parts 3/4 will work on, before running them (same rule the MCP tool uses)."""
     target, picked = emails_for_day(emails, day)
     with st.expander(f"📬 {len(picked)} email(s) on {target} will be sorted", expanded=False):
@@ -70,6 +73,17 @@ def show_day_emails(emails: list[dict], day: str, days: list[str]) -> None:
             [{"#": e["id"], "From": e["from"], "Subject": e["subject"], "Date": e["date"]} for e in picked],
             hide_index=True, use_container_width=True,
         )
+
+
+def remember(key: str, inputs: tuple, result) -> None:
+    """Keep a result together with the inputs that produced it."""
+    st.session_state[key] = (inputs, result)
+
+
+def recall(key: str, inputs: tuple):
+    """A saved result, but only if it came from these same inputs (same inbox, same day)."""
+    saved = st.session_state.get(key)
+    return saved[1] if saved and saved[0] == inputs else None
 
 
 def run_agents(label: str, fn, *args):
@@ -90,6 +104,7 @@ with st.sidebar:
     st.header("📥 Inbox")
     source = st.radio("Inbox PDF", ["Sample inbox", "Upload my own"], label_visibility="collapsed")
     pdf_path = SAMPLE_PDF
+    inbox_id = ("sample",)  # identifies which inbox a result came from
     if source == "Upload my own":
         upload = st.file_uploader("Inbox PDF", type="pdf", help="Each email starts with a 'From:' line, then 'Date:' and 'Subject:' lines.")
         if upload is None:
@@ -99,6 +114,7 @@ with st.sidebar:
         pdf_path = os.path.join(UPLOAD_DIR, "inbox.pdf")
         with open(pdf_path, "wb") as f:
             f.write(upload.getbuffer())
+        inbox_id = ("upload", upload.name, upload.size)
 
     try:
         emails = _load_emails(pdf_path)
@@ -143,33 +159,34 @@ st.markdown(
 )
 
 t1, t2, t3, t4 = st.tabs(["1 · Reply to a pasted email", "2 · Reply to the first email", "3 · Sort the day's emails", "4 · Sort + draft replies"])
-state = st.session_state
 
 with t1:
     st.markdown("Paste any email, and the **Writer** drafts a reply. This doesn't use the inbox.")
     email_text = st.text_area("Email", value=SAMPLE_EMAIL, height=220)
     if st.button("✍️ Draft reply", type="primary", key="b1", disabled=not email_text.strip()):
-        state["p1"] = run_agents("Writer", part1.run, email_text.strip())
-    if state.get("p1"):
+        remember("p1", (email_text.strip(),), run_agents("Writer", part1.run, email_text.strip()))
+    reply1 = recall("p1", (email_text.strip(),))
+    if reply1:
         st.markdown("#### Draft reply")
-        show_draft(state["p1"], "p1")
+        show_draft(reply1, "p1")
 
 with t2:
     first = emails[0]
     st.markdown("The **Writer** connects to the inbox through MCP, fetches the first email itself, and replies to it.")
     st.caption(f"First email in this inbox: **{first['subject']}** — {first['from']}")
     if st.button("✍️ Reply to first email", type="primary", key="b2"):
-        state["p2"] = run_agents("Writer", part2.run, pdf_path)
-    if state.get("p2"):
+        remember("p2", inbox_id, run_agents("Writer", part2.run, pdf_path))
+    reply2 = recall("p2", inbox_id)
+    if reply2:
         st.markdown("#### Draft reply")
-        show_draft(state["p2"], "p2")
+        show_draft(reply2, "p2")
 
 with t3:
     st.markdown("The **Reader** lists the day's emails through MCP and sorts every one of them.")
-    show_day_emails(emails, day, days)
+    show_day_emails(emails, day)
     if st.button("🔎 Sort emails", type="primary", key="b3"):
-        state["p3"] = run_agents("Reader", part3.run, pdf_path, day)
-    out3 = state.get("p3")
+        remember("p3", inbox_id + (day,), run_agents("Reader", part3.run, pdf_path, day))
+    out3 = recall("p3", inbox_id + (day,))
     if out3:
         if out3.re_requested:
             st.info(f"The Reader skipped {', '.join(f'#{i}' for i in out3.re_requested)} at first, so it was asked again.")
@@ -183,10 +200,10 @@ with t4:
         "The **Reader** sorts the day's emails, then hands its list to the **Writer**. The Writer fetches each "
         "email that needs action and drafts a reply."
     )
-    show_day_emails(emails, day, days)
+    show_day_emails(emails, day)
     if st.button("🚀 Sort and draft replies", type="primary", key="b4"):
-        state["p4"] = run_agents("Reader → Writer", part4.run, pdf_path, day)
-    out = state.get("p4")
+        remember("p4", inbox_id + (day,), run_agents("Reader → Writer", part4.run, pdf_path, day))
+    out = recall("p4", inbox_id + (day,))
     if out:
         st.markdown("### Step 1 · Reader's triage")
         if out.triage_re_requested:

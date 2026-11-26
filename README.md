@@ -1,66 +1,36 @@
-# Email Agents — Reader + Writer with CrewAI and MCP
+# Email Agents
 
-Two AI agents that work through your inbox:
+Two AI assistants that go through your inbox for you:
 
-- A **Reader** sorts the day's emails into *needs action from me* and *doesn't need action from me*.
-- A **Writer** drafts replies, and the Reader hands it the emails that need action.
+- The **Reader** looks at the day's emails and sorts them into **needs action from me** and **doesn't need action from me**.
+- The **Writer** drafts a reply to each email that needs action.
 
-The inbox comes from a **PDF export** and is served to the agents by an **MCP server**. The agents never open the PDF themselves, so connecting a live mailbox (Gmail/IMAP) later only means changing that one server file.
+You give it your inbox as a **PDF**. **Nothing is ever sent:** every reply is a draft for you to check. When a reply needs something only you can decide, like a meeting time or a yes/no, the Writer leaves a gap such as `[pick Tue or Thu]` for you to fill in.
 
-**Nothing is ever sent.** Every reply is a draft, and where a reply needs a decision only you can make, the Writer leaves a placeholder like `[pick Tue or Thu]`.
+## What it can do
 
-**Built with:** [CrewAI](https://github.com/crewAIInc/crewAI) for the agents, the [Model Context Protocol](https://modelcontextprotocol.io) (MCP) for inbox access, [Groq](https://groq.com) running `gpt-oss-20b` as the LLM, and [Streamlit](https://streamlit.io) for the web UI.
+| # | What happens |
+|---|---|
+| 1 | **Reply to an email you paste in.** The Writer drafts a reply. |
+| 2 | **Reply to the first email in your inbox.** The Writer opens the inbox, reads the first email, and drafts a reply. |
+| 3 | **Sort the day's emails.** The Reader puts every email from that day into one of the two groups. |
+| 4 | **Sort, then reply.** The Reader sorts the day's emails and passes the "needs action" ones to the Writer, which drafts a reply to each. |
 
-**Design choices:**
-- **Two narrow agents in a pipeline.** The Reader only sorts and the Writer only drafts, run in order with `Process.sequential`.
-- **A scoped handoff.** The Writer's task has `context=[triage]`, so it sees the Reader's output and nothing else.
-- **Structured output.** The triage and the drafts are Pydantic models, not free text.
-- **The agents choose their own tools.** For inbox tasks they decide when to call `get_first_email`, `list_emails` and `get_email`; the code never hands them inbox emails. (Part 1 is the exception by design: you paste the email in.)
-- **Checked output.** The triage must cover every email that day, and there must be one draft per needs-action email. Anything an agent skips is sent back to it, and the reply address is taken from the email itself, not from the model.
+Both assistants are double-checked. If the Reader misses an email or the Writer misses a reply, it's asked again, and every reply goes to the address that's actually in the email.
 
-## How it fits together
+## Screenshots (real runs)
 
-```
- sample_inbox.pdf
-        │  (read only by the server)
-        ▼
- inbox_mcp_server.py ── MCP over stdio ──┐
-   tools: inbox_overview, list_emails,   │
-          get_email, get_first_email     │
-                                         ▼
-                     ┌──── CrewAI crew (Groq: gpt-oss-20b) ────┐
-                     │  Reader ──context=[triage]──▶ Writer     │
-                     │  "needs action?"             draft replies│
-                     └─────────────────────────────────────────┘
-                                         │
-                                         ▼
-                          output/*.md  (drafts, never sent)
-```
+### 4 — Sort, then reply
+![Sort, then reply](screenshots/ui_part4.png)
 
-## What it does
+### 3 — Sort the day's emails
+![Sort the day's emails](screenshots/ui_part3.png)
 
-| # | Script | What happens |
-|---|---|---|
-| 1 | `part1_reply_to_pasted.py` | Paste an email, and the **Writer** drafts a reply. No inbox involved. |
-| 2 | `part2_reply_first_email.py` | The **Writer** connects to the inbox through MCP, calls `get_first_email`, and replies to it. |
-| 3 | `part3_categorize_today.py` | The **Reader** lists one day's emails through MCP and sorts every one into the two categories. |
-| 4 | `part4_reader_to_writer.py` | The **Reader** triages, then hands off to the **Writer**, which fetches each needs-action email and drafts a reply. |
+### 2 — Reply to the first email
+![Reply to the first email](screenshots/ui_part2.png)
 
-## Web UI (real test runs)
-
-`streamlit run app.py` gives every part a tab. These screenshots were taken by `ui_screenshots.py`, which clicks each tab's button in Chrome, waits for the agents, and saves the page.
-
-### Part 4 — Reader sorts the day's emails, Writer drafts replies
-![UI Part 4](screenshots/ui_part4.png)
-
-### Part 3 — sort the day's emails
-![UI Part 3](screenshots/ui_part3.png)
-
-### Part 2 — reply to the first inbox email
-![UI Part 2](screenshots/ui_part2.png)
-
-### Part 1 — reply to a pasted email
-![UI Part 1](screenshots/ui_part1.png)
+### 1 — Reply to a pasted email
+![Reply to a pasted email](screenshots/ui_part1.png)
 
 ## Run it yourself
 
@@ -72,42 +42,53 @@ pip install -r requirements.txt
 cp .env.example .env          # then put your GROQ_API_KEY in .env
 ```
 
-```bash
-python part1_reply_to_pasted.py samples/pasted_email.txt   # or run with no file and paste, then Ctrl-D
-python part2_reply_first_email.py
-python part3_categorize_today.py
-python part4_reader_to_writer.py
-```
-
-**Or use the web UI:**
+**The easy way, a web page:**
 
 ```bash
 streamlit run app.py
 ```
 
-It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF, choose the day, and run any part from its tab. Drafts appear in boxes with a copy button. The UI calls the same agents as the scripts.
+It opens at http://localhost:8501. Pick the sample inbox or upload your own PDF, choose a day, and click the button on any tab. Each draft has a copy button.
 
-**Use your own inbox:** export some emails to a PDF, with each email starting with a `From:` line and followed by `Date:` (or `Sent:`) and `Subject:` lines, then pass it with `--pdf my_inbox.pdf`. `python make_sample_inbox.py` shows the format; it generates the fake `sample_inbox.pdf` used here, and every person and company in it is made up. A few rules for your own PDF:
-- **Quoted replies are fine.** A `From:` line right after "On … wrote:", "-----Original Message-----", a `____` line or "Begin forwarded message" is kept as part of the email it's quoted in.
-- **Keep each subject on one line.** PDF text extraction loses blank lines, so a subject wrapped onto a second line runs into the body.
-- **Every email needs a readable date** to be picked by day. Undated emails are flagged in the UI and by `inbox_overview`.
-- **US-style dates:** `03/04/2026` is read as 3 April. Set `INBOX_DATE_ORDER=MDY` in `.env` to read it as 4 March.
+**Or from the terminal:**
 
-**Which day counts as "today":** Parts 3 and 4 default to the newest day in the PDF, because an export is a snapshot. Use `--date today` for the real calendar day, or `--date 2026-11-26` for a specific one.
+```bash
+python part1_reply_to_pasted.py samples/pasted_email.txt   # or run with no file, paste an email, then Ctrl-D
+python part2_reply_first_email.py
+python part3_categorize_today.py
+python part4_reader_to_writer.py
+```
 
-**Try the MCP server with no LLM:** run `mcp dev inbox_mcp_server.py` and call the tools in MCP Inspector.
+Add `--pdf my_inbox.pdf` to use your own inbox, and `--date 2026-11-26` to pick a day. Parts 3 and 4 use the **newest day in the PDF** by default, since an exported PDF is a snapshot; `--date today` uses today's date.
 
-**Retake the screenshots:** with the UI running, `python ui_screenshots.py`.
+## Using your own inbox PDF
+
+Each email in the PDF should start with a `From:` line, followed by `Date:` (or `Sent:`) and `Subject:` lines. `sample_inbox.pdf` shows the format, and `python make_sample_inbox.py` rebuilds it. Everyone in it is made up.
+
+- **Quoted replies are fine.** An earlier email quoted inside a reply stays part of that reply.
+- **Most date styles work,** including Gmail's and Outlook's. For US-style dates like `03/04/2026` (4 March), add `INBOX_DATE_ORDER=MDY` to `.env`.
+- **Emails with no date** can't be picked by day. The web page warns you about them.
+- **Keep each subject on one line.** A subject that wraps onto a second line runs into the email's text.
+
+## How it's built
+
+- **[CrewAI](https://github.com/crewAIInc/crewAI)** runs the two agents in order, Reader then Writer (`Process.sequential`). The Writer's task gets only the Reader's result (`context=[triage]`).
+- **An [MCP](https://modelcontextprotocol.io) server** (`inbox_mcp_server.py`) reads the PDF and offers 4 tools: `inbox_overview`, `list_emails`, `get_email` and `get_first_email`. The agents decide for themselves when to use them, and never see the PDF directly. Connecting a live mailbox later only means changing this one file.
+- **[Groq](https://groq.com)** runs the model, `gpt-oss-20b`. `common.py` adjusts a few CrewAI requests so Groq accepts them, and waits and retries on Groq's free-tier rate limits.
+- **Pydantic models** hold the sorted list and the drafts, so the results can be checked in code.
+- **[Streamlit](https://streamlit.io)** is the web page.
+
+To try the inbox tools without any AI, run `mcp dev inbox_mcp_server.py` (needs [Node.js](https://nodejs.org)). To retake the screenshots, start the web page and run `python ui_screenshots.py`.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `inbox_mcp_server.py` | MCP server: parses the PDF into emails and serves them as 4 tools |
-| `common.py` | LLM setup, the Reader and Writer agents, MCP launch config, Groq compatibility settings |
-| `triage.py` | The Reader's task, its Pydantic output, and the check that every email was sorted |
-| `part1_…` – `part4_…` | One script per feature; each has a `run()` function the UI calls |
-| `app.py` | Streamlit web UI for all 4 parts |
-| `ui_screenshots.py` | Runs each part in the web UI (headless Chrome via Playwright) and saves `screenshots/ui_partN.png` |
-| `make_sample_inbox.py` | Generates the fake `sample_inbox.pdf` |
-| `output/` | Drafts and triage from the latest runs |
+| `app.py` | The web page |
+| `part1_…` – `part4_…` | The 4 features, one script each |
+| `inbox_mcp_server.py` | Reads the PDF and serves the emails to the agents |
+| `common.py` | The two agents and the model settings |
+| `triage.py` | The Reader's sorting task and its double-check |
+| `make_sample_inbox.py` | Builds the made-up `sample_inbox.pdf` |
+| `ui_screenshots.py` | Retakes the screenshots |
+| `samples/`, `output/` | A sample email to paste, and results from the latest runs |

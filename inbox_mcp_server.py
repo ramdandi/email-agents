@@ -54,28 +54,43 @@ _QUOTE_MARKER = re.compile(
     r"^(On .{3,200} wrote:|-{2,}\s*Original Message\s*-{2,}|_{5,}|-{2,}\s*Forwarded message\s*-{2,}|Begin forwarded message:?)$",
     re.IGNORECASE,
 )
-_DATE_FORMATS = [
-    "%Y-%m-%d %H:%M", "%Y-%m-%d", "%d %b %Y %H:%M", "%d %b %Y", "%d %B %Y",
-    "%b %d, %Y %I:%M %p", "%b %d, %Y", "%B %d, %Y %I:%M %p", "%B %d, %Y",
-    "%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M", "%A, %B %d, %Y %I:%M %p",
-]
-_DMY = ["%d/%m/%Y %H:%M", "%d/%m/%Y", "%d/%m/%Y %I:%M %p"]
-_MDY = ["%m/%d/%Y %H:%M", "%m/%d/%Y", "%m/%d/%Y %I:%M %p"]
-_NUMERIC_FORMATS = _MDY if os.getenv("INBOX_DATE_ORDER", "DMY").upper() == "MDY" else _DMY
+_NUMERIC_DATE = "%m/%d/%Y" if os.getenv("INBOX_DATE_ORDER", "DMY").upper() == "MDY" else "%d/%m/%Y"
+# Every date layout x every time layout x with/without a weekday, e.g.
+# "Thu Nov 26 2026 9:14 AM" (Gmail, after cleanup), "26 Nov 2026 09:14:00",
+# "Thursday November 26 2026 6:20 PM" (Outlook), "2026-11-26 09:14".
+_DATES = ["%Y-%m-%d", "%d %b %Y", "%d %B %Y", "%b %d %Y", "%B %d %Y", _NUMERIC_DATE]
+_TIMES = ["", " %H:%M", " %H:%M:%S", " %I:%M %p", " %I:%M:%S %p"]
+_DATE_FORMATS = [wd + d + t for d in _DATES for t in _TIMES for wd in ("", "%a ", "%A ")]
 
 
 def _parse_date(raw: str) -> str | None:
-    """Turn a Date: header into YYYY-MM-DD, or None if we can't read it."""
-    # Drop "(IST)", "+0530" and zone names like "GMT", but keep AM/PM.
-    cleaned = re.sub(r"\s*\(.*?\)|\s+[+-]\d{4}$|\s+(?!AM$|PM$)[A-Z]{2,4}$", "", raw.strip())
-    cleaned = re.sub(r"\s+[+-]\d{4}$", "", cleaned)
-    for fmt in _DATE_FORMATS + _NUMERIC_FORMATS:
+    """Turn a Date:/Sent: header into YYYY-MM-DD, or None if we can't read it."""
+    s = raw.strip()
+    s = re.sub(r"\(.*?\)", " ", s)                       # "(IST)"
+    s = re.sub(r"(\d{4}-\d{2}-\d{2})T", r"\1 ", s)       # ISO "2026-11-26T09:14:00"
+    s = re.sub(r"(\d)(Z|\.\d+)\b", r"\1", s)             # "...:00Z", "...:00.123"
+    s = re.sub(r"[+-]\d{2}:?\d{2}\s*$", "", s)           # "+0530", "-05:00"
+    s = re.sub(r"\s(?!AM\b|PM\b)[A-Z]{2,4}\s*$", "", s)  # "GMT", "IST" (keep AM/PM)
+    s = re.sub(r"\bat\b", " ", s)                        # Gmail's "... 2026 at 9:14 AM"
+    s = re.sub(r"[,\s]+", " ", s).strip()                # commas and extra spaces
+    for fmt in _DATE_FORMATS:
         try:
-            return datetime.strptime(cleaned, fmt).date().isoformat()
+            return datetime.strptime(s, fmt).date().isoformat()
         except ValueError:
             pass
     m = re.search(r"\d{4}-\d{2}-\d{2}", raw)
     return m.group(0) if m else None
+
+
+def valid_date_choice(date: str) -> bool:
+    """'latest', 'today', 'all' or a real YYYY-MM-DD date."""
+    if date.lower() in ("latest", "today", "all", ""):
+        return True
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
 
 
 def _load_emails(path: str | None = None) -> list[dict]:
@@ -92,20 +107,31 @@ def _load_emails(path: str | None = None) -> list[dict]:
     for i, ln in enumerate(lines):
         if not re.match(r"^\s*From\s*:", ln, re.IGNORECASE):
             continue
-        before = [p.strip() for p in lines[max(0, i - 3):i] if p.strip()]
-        if before and _QUOTE_MARKER.match(before[-1]):
+        before = [p.strip() for p in lines[max(0, i - 4):i] if p.strip()]
+        # The marker may be one line, or a long "On ... wrote:" wrapped onto two.
+        if before and (_QUOTE_MARKER.match(before[-1]) or (len(before) >= 2 and _QUOTE_MARKER.match(f"{before[-2]} {before[-1]}"))):
             continue
         starts.append(i)
     emails = []
     for n, start in enumerate(starts):
         block = lines[start: starts[n + 1] if n + 1 < len(starts) else len(lines)]
-        headers, i = {}, 0
+        headers, i, last = {}, 0, None
         while i < len(block):
             m = _HEADER.match(block[i].strip())
-            if not m:
-                break
-            headers[m.group(1).lower()] = m.group(2).strip()
-            i += 1
+            if m:
+                last = m.group(1).lower()
+                headers[last] = m.group(2).strip()
+                i += 1
+                continue
+            # A long To:/Cc:/From: line wrapped onto the next line: keep reading
+            # headers if another header follows within the next 2 lines.
+            if last in ("to", "cc", "from") and "subject" not in headers and any(
+                _HEADER.match(nxt.strip()) for nxt in block[i + 1:i + 3]
+            ):
+                headers[last] += " " + block[i].strip()
+                i += 1
+                continue
+            break
         body = "\n".join(block[i:]).strip()
         raw_date = headers.get("date") or headers.get("sent") or ""
         emails.append({
@@ -158,6 +184,8 @@ def list_emails(date: str = "latest") -> str:
 
     date: 'YYYY-MM-DD', 'latest' (the newest day in the inbox, the default), 'today', or 'all'.
     """
+    if not valid_date_choice(date):
+        return json.dumps({"error": f"Bad date {date!r}. Use YYYY-MM-DD, 'latest', 'today' or 'all'."})
     day, picked = emails_for_day(_load_emails(), date)
     return json.dumps({"day": day, "count": len(picked), "emails": [_summary(e) for e in picked]})
 

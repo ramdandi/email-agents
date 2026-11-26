@@ -44,7 +44,7 @@ def complete_triage(reader: Agent, triage: InboxTriage, expected: list[dict], da
     """
     by_id = {e["id"]: e for e in expected}
     triage.day = day
-    triage.emails = [t for t in triage.emails if t.id in by_id]
+    triage.emails = list({t.id: t for t in reversed(triage.emails) if t.id in by_id}.values())  # one per email (first wins)
     missing = [i for i in by_id if i not in {t.id for t in triage.emails}]
     if missing:
         follow_up = Task(

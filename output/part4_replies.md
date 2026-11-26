@@ -7,11 +7,11 @@ Emails on 2026-11-26: 6
 
 1) NEEDS ACTION FROM ME (3)
    #1 Vendor contract - need your sign-off by Friday — Priya Shah <priya.shah@northwind-legal.example>
-      -> Sign the contract.
+      -> Sign off contract
    #3 Can we move Thursday's sync? — Marcus Lee <marcus.lee@contoso.example>
-      -> Confirm new meeting time.
+      -> Reply to reschedule
    #5 Invoice INV-2291 question — Anita Rao <anita.rao@fabrikam.example>
-      -> Review invoice and reply.
+      -> Reply to invoice query
 
 2) DOES NOT NEED ACTION FROM ME (3)
    #2 This week: 7 AI agent frameworks compared — The Weekly Byte <newsletter@weeklybyte.example>
@@ -19,7 +19,7 @@ Emails on 2026-11-26: 6
    #4 Your order #48213 has shipped — ShopFast Orders <no-reply@shopfast.example>
       (Automated shipment notification.)
    #6 FYI: office closed on Monday for maintenance — Team Updates <updates@company.example>
-      (FYI update.)
+      (FYI office closure.)
 ```
 
 ## Writer's draft replies
@@ -31,26 +31,21 @@ Subject: Re: Vendor contract - need your sign-off by Friday
 
 Hi Priya,
 
-Thank you for the updated contract. I have a couple of points:
+Thanks for sending the redlined contract. I need to confirm a couple of points with the finance team. Please let me know if you approve the 60‑day payment term? [approve 60-day terms? yes/no] And should we cap liability at 12 months of fees? [approve liability cap? yes/no] I will sign off by Friday if we agree.
 
-1. The 60‑day payment term is acceptable.
-2. The liability cap of 12 months of fees is also acceptable.
-
-I will sign off and send the signed copy back to you by end of day.
-
-Best regards,
-[Your Name]
+Thanks,
+Your Name
 
 --- Reply to email #3 ---
 To: Marcus Lee <marcus.lee@contoso.example>
 Subject: Re: Can we move Thursday's sync?
 
-Hey Marcus,
+Hi Marcus,
 
-Friday morning works for me. Let's schedule the sync for 10:00 am. I'll update the invite.
+Friday morning works for me. Let me know what time between 10 am and 12 pm suits you best. I’ll update the invite accordingly.
 
 Cheers,
-[Your Name]
+Your Name
 
 --- Reply to email #5 ---
 To: Anita Rao <anita.rao@fabrikam.example>
@@ -58,8 +53,8 @@ Subject: Re: Invoice INV-2291 question
 
 Hello Anita,
 
-Thank you for bringing this to my attention. I will review the invoice and the PO details and get back to you with confirmation or a revised invoice by the end of today.
+Thanks for reaching out. Could you confirm whether the extra Rs 25,000 is for an additional training day? [confirm training day? yes/no] If not, please send a revised invoice. Our payment run is on Monday, so we’ll need the updated invoice by then.
 
-Best regards,
-[Your Name]
+Regards,
+Your Name
 ```

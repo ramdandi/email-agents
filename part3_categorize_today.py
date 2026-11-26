@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 
 from crewai import Crew, Process
 
-from common import exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_reader, require_key, save_output
+from common import check_date, exit_on_inbox_error, inbox_server, load_inbox, make_llm, make_reader, require_key, save_output
 from inbox_mcp_server import emails_for_day
 from triage import InboxTriage, complete_triage, format_triage, triage_task
 
@@ -36,8 +36,14 @@ class Part3Result:
 
 
 def run(pdf: str | None = None, date: str = "latest") -> Part3Result:
-    """Triage one day's emails. Raises common.InboxError if the PDF is missing or empty."""
+    """Triage one day's emails. Raises common.InboxError for a missing/empty PDF or a bad date."""
+    check_date(date)
     day, expected = emails_for_day(load_inbox(pdf), date)
+    if not expected:  # nothing to sort: don't spend an LLM call on it
+        out = Part3Result(triage=InboxTriage(day=day, emails=[]), raw="", day=day)
+        save_output("part3_triage.json", out.triage.model_dump_json(indent=2))
+        save_output("part3_triage.md", f"# Part 3 — inbox triage\n\n```\n{format_triage(out.triage)}\n```\n")
+        return out
     reader = make_reader(make_llm(), mcps=[inbox_server(pdf)])
     result = Crew(agents=[reader], tasks=[triage_task(reader, date)], process=Process.sequential, verbose=True).kickoff()
 
