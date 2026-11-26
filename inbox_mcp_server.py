@@ -40,10 +40,12 @@ import os
 import re
 from datetime import datetime
 
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from pypdf import PdfReader
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(HERE, ".env"))  # so INBOX_PDF / INBOX_DATE_ORDER work when run on its own (mcp dev)
 PDF_PATH = os.getenv("INBOX_PDF") or os.path.join(HERE, "sample_inbox.pdf")
 
 mcp = FastMCP("Inbox (PDF)")

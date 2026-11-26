@@ -9,6 +9,7 @@ so the agents, the MCP inbox server and the Groq fixes are all the same.
 Nothing is ever sent — every reply is a draft you can copy.
 """
 
+import hashlib
 import os
 
 os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")  # no "share trace?" prompt blocking the server
@@ -110,11 +111,15 @@ with st.sidebar:
         if upload is None:
             st.info("Upload a PDF, or switch back to the sample inbox.")
             st.stop()
+        # One file per distinct upload, so two browser tabs can't overwrite each other's inbox.
+        data = upload.getvalue()
+        digest = hashlib.sha256(data).hexdigest()[:16]
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-        pdf_path = os.path.join(UPLOAD_DIR, "inbox.pdf")
-        with open(pdf_path, "wb") as f:
-            f.write(upload.getbuffer())
-        inbox_id = ("upload", upload.name, upload.size)
+        pdf_path = os.path.join(UPLOAD_DIR, f"inbox-{digest}.pdf")
+        if not os.path.exists(pdf_path):
+            with open(pdf_path, "wb") as f:
+                f.write(data)
+        inbox_id = ("upload", digest)
 
     try:
         emails = _load_emails(pdf_path)

@@ -16,7 +16,7 @@ You give it your inbox as a **PDF**. **Nothing is ever sent:** every reply is a 
 | 3 | **Sort the day's emails.** The Reader puts every email from that day into one of the two groups. |
 | 4 | **Sort, then reply.** The Reader sorts the day's emails and passes the "needs action" ones to the Writer, which drafts a reply to each. |
 
-Both assistants are double-checked. If the Reader misses an email or the Writer misses a reply, it's asked again, and every reply goes to the address that's actually in the email.
+In feature 4 both assistants are double-checked. If the Reader misses an email or the Writer misses a reply, it's asked again, and each reply goes to the address that's actually in the email.
 
 ## Screenshots (real runs)
 
@@ -59,7 +59,7 @@ python part3_categorize_today.py
 python part4_reader_to_writer.py
 ```
 
-Add `--pdf my_inbox.pdf` to use your own inbox, and `--date 2026-11-26` to pick a day. Parts 3 and 4 use the **newest day in the PDF** by default, since an exported PDF is a snapshot; `--date today` uses today's date.
+For features 2–4, add `--pdf my_inbox.pdf` to use your own inbox, and for 3–4 add `--date 2026-11-26` to pick a day. Parts 3 and 4 use the **newest day in the PDF** by default, since an exported PDF is a snapshot; `--date today` uses today's date.
 
 ## Using your own inbox PDF
 
@@ -78,7 +78,7 @@ Each email in the PDF should start with a `From:` line, followed by `Date:` (or 
 - **Pydantic models** hold the sorted list and the drafts, so the results can be checked in code.
 - **[Streamlit](https://streamlit.io)** is the web page.
 
-To try the inbox tools without any AI, run `mcp dev inbox_mcp_server.py` (needs [Node.js](https://nodejs.org)). To retake the screenshots, start the web page and run `python ui_screenshots.py`.
+To run the tests (no API key needed), run `pytest -q`. To try the inbox tools without any AI, run `mcp dev inbox_mcp_server.py` (needs [Node.js](https://nodejs.org)). To retake the screenshots, start the web page and run `python ui_screenshots.py`.
 
 ## Files
 
@@ -91,4 +91,5 @@ To try the inbox tools without any AI, run `mcp dev inbox_mcp_server.py` (needs 
 | `triage.py` | The Reader's sorting task and its double-check |
 | `make_sample_inbox.py` | Builds the made-up `sample_inbox.pdf` |
 | `ui_screenshots.py` | Retakes the screenshots |
+| `tests/` | Basic checks you can run with `pytest -q` |
 | `samples/`, `output/` | A sample email to paste, and results from the latest runs |

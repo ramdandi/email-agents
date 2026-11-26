@@ -64,28 +64,42 @@ LLM._prepare_completion_params = _prepare_completion_params_for_groq
 _orig_completion = litellm.completion
 
 
+#    Other errors worth retrying, each with its own limit so one kind of
+#    error can't use up the retries meant for another:
+#    4. gpt-oss on Groq sometimes produces output Groq can't parse
+#       ("output_parse_failed") or a malformed tool call. Retrying usually works.
+#    5. Groq is briefly down or over capacity (500/503, dropped connection).
 _FLAKY_GENERATION = ("output_parse_failed", "tool_use_failed")
+_SERVER_ERRORS = (litellm.ServiceUnavailableError, litellm.InternalServerError, litellm.APIConnectionError, litellm.Timeout)
+MAX_RETRIES = {"rate_limit": 8, "bad_output": 3, "server": 4}
 
 
 def _completion_waiting_on_rate_limits(*args, **kwargs):
-    for attempt in range(8):
+    used = dict.fromkeys(MAX_RETRIES, 0)
+
+    def retry_or_raise(kind: str, wait: float, note: str, error: Exception) -> None:
+        used[kind] += 1
+        if used[kind] > MAX_RETRIES[kind]:
+            raise error
+        print(f"[{kind.replace('_', ' ')}] {note}", file=sys.stderr)
+        time.sleep(wait)
+
+    while True:
         try:
             return _orig_completion(*args, **kwargs)
-        except litellm.BadRequestError as e:
-            # 4. gpt-oss on Groq sometimes produces output Groq can't parse
-            #    ("output_parse_failed") or a malformed tool call. Retrying the
-            #    same request usually works.
-            if attempt >= 2 or not any(code in str(e) for code in _FLAKY_GENERATION):
-                raise
-            print("[retry] Groq couldn't parse the model's output — trying again...", file=sys.stderr)
-            time.sleep(2)
         except litellm.RateLimitError as e:
-            if attempt == 7 or "per day" in str(e):  # daily limits won't clear by waiting
+            if "per day" in str(e):  # daily limits won't clear by waiting
                 raise
             m = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", str(e))
             wait = (int(m.group(1) or 0) * 60 + float(m.group(2)) if m else 10) + 1
-            print(f"[rate limit] Groq asked us to wait {wait:.0f}s — waiting, then retrying...", file=sys.stderr)
-            time.sleep(wait)
+            retry_or_raise("rate_limit", wait, f"Groq asked us to wait {wait:.0f}s — waiting, then retrying...", e)
+        except litellm.BadRequestError as e:
+            if not any(code in str(e) for code in _FLAKY_GENERATION):
+                raise
+            retry_or_raise("bad_output", 2, "Groq couldn't parse the model's output — trying again...", e)
+        except _SERVER_ERRORS as e:
+            wait = 5 * (used["server"] + 1)
+            retry_or_raise("server", wait, f"Groq is unavailable right now — retrying in {wait}s...", e)
 
 
 litellm.completion = _completion_waiting_on_rate_limits

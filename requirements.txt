@@ -9,3 +9,4 @@ rich==14.3.4
 streamlit==1.67.0
 reportlab==5.1.2     # only for make_sample_inbox.py
 playwright==1.65.2   # only for ui_screenshots.py (uses your installed Chrome)
+pytest==9.2.0  # only for the tests
