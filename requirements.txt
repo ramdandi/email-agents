@@ -7,3 +7,4 @@ python-dotenv
 rich
 reportlab   # only for make_sample_inbox.py
 streamlit
+playwright  # only for ui_screenshots.py (uses your installed Chrome)

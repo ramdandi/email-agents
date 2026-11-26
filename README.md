@@ -47,7 +47,23 @@ The inbox comes from a **PDF export** and is served to the agents by an **MCP se
 | 3 | `part3_categorize_today.py` | The **Reader** lists one day's emails through MCP and sorts every one into the two categories. |
 | 4 | `part4_reader_to_writer.py` | The **Reader** triages, then hands off to the **Writer**, which fetches each needs-action email and drafts a reply. |
 
-## Screenshots (real test runs)
+## Web UI (real test runs)
+
+`streamlit run app.py` gives every part a tab. These screenshots were taken by `ui_screenshots.py`, which clicks each tab's button in Chrome, waits for the agents, and saves the page.
+
+### Part 4 — Reader sorts the day's emails, Writer drafts replies
+![UI Part 4](screenshots/ui_part4.png)
+
+### Part 3 — sort the day's emails
+![UI Part 3](screenshots/ui_part3.png)
+
+### Part 2 — reply to the first inbox email
+![UI Part 2](screenshots/ui_part2.png)
+
+### Part 1 — reply to a pasted email
+![UI Part 1](screenshots/ui_part1.png)
+
+## Terminal screenshots (real test runs)
 
 These were made by `capture.py`, which runs each part against Groq and records the command, every agent → MCP tool call, and the final output.
 
@@ -115,6 +131,7 @@ CrewAI 1.15 with MCP on Groq's free tier needed 4 workarounds. All of them are i
 | `triage.py` | The Reader's task and its Pydantic output, shared by Parts 3 and 4 |
 | `part1_…` – `part4_…` | One script per assignment part; each has a `run()` function the UI calls |
 | `app.py` | Streamlit web UI for all 4 parts |
-| `capture.py` | Runs a part and saves a screenshot to `screenshots/` |
+| `capture.py` | Runs a part in the terminal and saves a screenshot to `screenshots/` |
+| `ui_screenshots.py` | Runs each part in the web UI (headless Chrome via Playwright) and saves `screenshots/ui_partN.png` |
 | `make_sample_inbox.py` | Generates the fake `sample_inbox.pdf` |
 | `output/` | Drafts and triage from the latest runs |

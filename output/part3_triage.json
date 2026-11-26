@@ -6,8 +6,8 @@
       "sender": "Priya Shah <priya.shah@northwind-legal.example>",
       "subject": "Vendor contract - need your sign-off by Friday",
       "category": "needs_action",
-      "reason": "Requests sign-off with a deadline.",
-      "action": "Sign the contract"
+      "reason": "Requires sign-off before Friday deadline.",
+      "action": "Sign and reply."
     },
     {
       "id": 2,
@@ -22,8 +22,8 @@
       "sender": "Marcus Lee <marcus.lee@contoso.example>",
       "subject": "Can we move Thursday's sync?",
       "category": "needs_action",
-      "reason": "Requests to reschedule a meeting.",
-      "action": "Confirm new time"
+      "reason": "Reschedule meeting request.",
+      "action": "Confirm new time."
     },
     {
       "id": 4,
@@ -38,15 +38,15 @@
       "sender": "Anita Rao <anita.rao@fabrikam.example>",
       "subject": "Invoice INV-2291 question",
       "category": "needs_action",
-      "reason": "Asks for confirmation on invoice discrepancy.",
-      "action": "Reply with confirmation"
+      "reason": "Clarify invoice discrepancy.",
+      "action": "Respond with confirmation."
     },
     {
       "id": 6,
       "sender": "Team Updates <updates@company.example>",
       "subject": "FYI: office closed on Monday for maintenance",
       "category": "no_action",
-      "reason": "FYI office closure notice.",
+      "reason": "FYI office closure.",
       "action": ""
     }
   ]
